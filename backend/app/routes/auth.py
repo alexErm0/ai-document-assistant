@@ -5,6 +5,8 @@ from passlib.context import CryptContext
 from app.database.db import SessionLocal
 from app.models.user import User
 from app.schemas.user_schema import UserCreate
+from app.schemas.user_schema import UserLogin
+from app.utils.jwt_handler import create_access_token
 
 router = APIRouter()
 
@@ -34,4 +36,22 @@ def register(user:UserCreate, db:Session = Depends(get_db)):
     return {
         "message": "User created successfully",
         "user_id": new_user.id
+    }
+@router.post("/login")
+def login(user:UserLogin, db:Session = Depends(get_db)):
+
+    db_user = db.query(User).filter(User.email == user.email).first()
+
+    if not db_user:
+        return {"error": "Invalid email"}
+
+    if not pwd_context.verify(user.password, db_user.password):
+        return {"error": "Invalid password"}
+    access_token = create_access_token(
+        data={"sub": db_user.email}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
     }
