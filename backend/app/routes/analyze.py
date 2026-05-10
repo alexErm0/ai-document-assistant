@@ -5,8 +5,9 @@ from pyexpat.errors import messages
 from  sqlalchemy.orm import Session
 
 from app.config import OPENAI_API_KEY
-from app.database.db import SessionLocal
+from app.database.db import SessionLocal, get_db
 from app.models.user import User
+from app.utils.jwt_handler import get_current_user
 
 router = APIRouter()
 
@@ -15,27 +16,19 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 class AnalyzeRequest(BaseModel):
     text: str
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @router.post("/analyze")
 def analyze(
         data: AnalyzeRequest,
+        current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
 
-    user = db.query(User).filter(User.username =="testuser").first()
+    if not current_user.is_admin:
 
-    if not user.is_admin:
-
-        if user.daily_requests >= 5:
+        if current_user.daily_requests >= 5:
             return {"error": "Daily limit reached"}
 
-        user.daily_requests += 1
+        current_user.daily_requests += 1
 
         db.commit()
 
