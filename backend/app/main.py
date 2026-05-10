@@ -4,6 +4,7 @@ from app.database.db import engine
 from app.models.user import User
 from app.routes.auth import router as auth_router
 from app.routes.upload import router as upload_router
+from app.routes.analyze import router as analyze_router
 
 app = FastAPI()
 
@@ -11,6 +12,7 @@ User.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
 app.include_router(upload_router)
+app.include_router(analyze_router)
 
 
 @app.get("/")
