@@ -1,17 +1,14 @@
 from fastapi import  APIRouter, Depends
 from pydantic import BaseModel
-from openai import OpenAI
 from pyexpat.errors import messages
 from  sqlalchemy.orm import Session
 
-from app.config import OPENAI_API_KEY
+from app.services.ai_service import analyze_text
 from app.database.db import SessionLocal, get_db
 from app.models.user import User
 from app.utils.jwt_handler import get_current_user
 
 router = APIRouter()
-
-client = OpenAI(api_key=OPENAI_API_KEY)
 
 class AnalyzeRequest(BaseModel):
     text: str
@@ -32,22 +29,5 @@ def analyze(
 
         db.commit()
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are an AI assistant that analyzes documents "
-                    "and creates concise summaries."
-                )
-            },
-            {
-                "role": "user",
-                "content": data.text
-            }
-        ]
-    )
-
-    summary = response.choices[0].message.content
+    summary = analyze_text(data.text)
     return {"summary": summary}

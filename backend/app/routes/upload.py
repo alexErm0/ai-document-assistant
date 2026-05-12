@@ -9,6 +9,7 @@ from docx import Document
 from PyPDF2 import PdfReader
 from PIL import Image
 from pdf2image import convert_from_path
+from app.services.ai_service import analyze_text
 
 router = APIRouter()
 
@@ -118,7 +119,10 @@ async def upload_file(file: UploadFile = File(...)):
     elif file.filename.endswith(".png", ".jpg", ".jpeg"):
         content = read_image(file_path)
 
+    summary = analyze_text(content)
+
     return {
         "filename": file.filename,
-        "content": content[:3000]
+        "content": content[:3000],
+        "summary": summary
     }
