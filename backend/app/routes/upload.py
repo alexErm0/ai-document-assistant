@@ -4,12 +4,18 @@ import pdfplumber
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r"D:\Tesseract-OCR\tesseract.exe"
 
-from fastapi import  APIRouter, UploadFile, File
+from fastapi import  APIRouter, UploadFile, File, Depends
 from docx import Document
 from PyPDF2 import PdfReader
 from PIL import Image
 from pdf2image import convert_from_path
+from sqlalchemy.orm import Session
+
 from app.services.ai_service import analyze_text
+from app.database.db import get_db
+from app.models.document import Document
+from app.models.user import User
+from app.utils.jwt_handler import get_current_user
 
 router = APIRouter()
 
@@ -96,7 +102,11 @@ def read_scanned_pdf(path):
     return text
 
 @router.post('/upload')
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+        file: UploadFile = File(...),
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
 
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
@@ -120,6 +130,17 @@ async def upload_file(file: UploadFile = File(...)):
         content = read_image(file_path)
 
     summary = analyze_text(content)
+
+    new_document = Document(
+        filename=file.filename,
+        content=content,
+        summary=summary,
+        user_id=current_user.id
+    )
+
+    db.add(new_document)
+    db.commit()
+    db.refresh(new_document)
 
     return {
         "filename": file.filename,
