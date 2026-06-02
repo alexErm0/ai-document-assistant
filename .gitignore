@@ -58,3 +58,7 @@ __pycache__/
 backend/uploads/
 .env
 *.pyc
+
+# start up scripts
+start-all.sh
+start-all.ps1
